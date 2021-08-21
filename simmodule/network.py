@@ -60,7 +60,7 @@ def SendCommand(command, expected):
     data = ReadSerial()
     internalTries = 0
     while(expected.encode() not in data):
-        if(internalTries > 3):
+        if(internalTries > 2):
             raise InvalidResponseException("Error in sending message > " + command)
         data = ReadSerial()
         internalTries = internalTries + 1
@@ -82,7 +82,7 @@ def SendCommandPayload(command, payload, expected, quotes):
     data = ReadSerial()
     internalTries = 0
     while(expected.encode() not in data):
-        if(internalTries > 3):
+        if(internalTries > 2):
             raise InvalidResponseException("Error in sending message > " + command)
         data = ReadSerial()
         internalTries = internalTries + 1
@@ -129,7 +129,6 @@ def InitializeModule():
     print("Configuring module...")
 
     SendCommand("ATE0\n", AT_RSP_OK)
-    SendCommand("AT\n", AT_RSP_OK)
 
     SendCommand(AT_CMD_SAPBR_GPRS, AT_RSP_OK)
     SendCommand(AT_CMD_SAPBR_APN, AT_RSP_OK)
@@ -143,12 +142,16 @@ def TerminateGprs():
     print("Terminating GPRS connection by error")
 
     if(httpInitialized):
-        SendCommand(AT_CMD_HTTPTERM, AT_RSP_OK)
+        ser.write(AT_CMD_HTTPTERM.encode())
+        ser.reset_input_buffer()
         httpInitialized = False
+        print("HTTP terminated")
     
     if(gprsInitialized):
-        SendCommand(AT_CMD_SAPBR0, AT_RSP_OK)
+        ser.write(AT_CMD_SAPBR0.encode())
+        ser.reset_input_buffer()
         gprsInitialized = False
+        print("GPRS Connection terminated")
 
 def GetVehicleStatus():
     global httpInitialized, gprsInitialized
@@ -161,6 +164,7 @@ def GetVehicleStatus():
         SendCommand(AT_CMD_HTTPINIT, AT_RSP_OK)
         httpInitialized = True
         time.sleep(1)
+
         SendCommand(AT_CMD_HTTPPARA_CID, AT_RSP_OK)
         SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_GET, AT_RSP_OK, True)
         SendCommandPayload(AT_CMD_HTTPDATA, "0,5000", AT_RSP_OK, False)
@@ -170,9 +174,11 @@ def GetVehicleStatus():
 
         SendCommand(AT_CMD_HTTPTERM, AT_RSP_OK)
         httpInitialized = False
+        time.sleep(1)
 
         SendCommand(AT_CMD_SAPBR0, AT_RSP_OK)
         gprsInitialized = False
+        time.sleep(1)
     except InvalidResponseException as err:
         print(err.message)
         TerminateGprs()
@@ -191,9 +197,11 @@ def PostGPSData(latitude, longitude):
         SendCommand(AT_CMD_SAPBR1, AT_RSP_OK)
         gprsInitialized = True
         time.sleep(1)
+        
         SendCommand(AT_CMD_HTTPINIT, AT_RSP_OK)
         httpInitialized = True
         time.sleep(1)
+
         SendCommand(AT_CMD_HTTPPARA_CID, AT_RSP_OK)
         SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_POST, AT_RSP_OK, True)
         SendCommand(AT_CMD_HTTPPARA_CONTENT, AT_RSP_OK)
@@ -204,9 +212,11 @@ def PostGPSData(latitude, longitude):
         
         SendCommand(AT_CMD_HTTPTERM, AT_RSP_OK)
         httpInitialized = False
+        time.sleep(1)
 
         SendCommand(AT_CMD_SAPBR0, AT_RSP_OK)
         gprsInitialized = False
+        time.sleep(1)
     except InvalidResponseException as err:
         print(err.message)
         TerminateGprs()
