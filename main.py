@@ -14,7 +14,10 @@ def GetVehicleData():
     while(True):
         if(vehicleStatus == 0):
             with lock:
-                serverData = GetVehicleStatus()
+                try:
+                    serverData = GetVehicleStatus()
+                except SIMNetworkError as err:
+                    print(err)
             if("2\r\n".encode() in serverData or "1\r\n".encode() in serverData):
                 print("Releasing lock... <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
                 vehicleStatus = 1
@@ -22,7 +25,10 @@ def GetVehicleData():
             time.sleep(2)
         elif(vehicleStatus == 1):
             with lock:
-                serverData = GetVehicleStatus()
+                try:
+                    serverData = GetVehicleStatus()
+                except SIMNetworkError as err:
+                    print(err)
             if("2\r\n".encode() not in serverData):
                 print("Locking vehicle >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 vehicleStatus = 0
