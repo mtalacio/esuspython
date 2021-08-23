@@ -1,7 +1,7 @@
 from metrics import GetStoredDistance, ResetDistanceBuffer, StoreDistance
 from simmodule.networkExceptions import GPSNotFixedException, SIMNetworkError
 import time
-from simmodule.network import GetVehicleStatus, InitializeModule, PostGPSData
+from simmodule.network import GetVehicleStatus, InitializeModule, PostDistance, PostGPSData
 from simmodule.gps import GetCoordinates, InitializeGPS
 import threading
 
@@ -14,11 +14,7 @@ def GetVehicleData():
     while(True):
         if(vehicleStatus == 0):
             with lock:
-                try:
-                    serverData = GetVehicleStatus()
-                except SIMNetworkError as err:
-                    print(err)
-
+                serverData = GetVehicleStatus()
             if("2\r\n".encode() in serverData or "1\r\n".encode() in serverData):
                 print("Releasing lock... <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
                 vehicleStatus = 1
@@ -26,10 +22,7 @@ def GetVehicleData():
             time.sleep(2)
         elif(vehicleStatus == 1):
             with lock:
-                try:
-                    serverData = GetVehicleStatus()
-                except SIMNetworkError as err:
-                    print(err)
+                serverData = GetVehicleStatus()
             if("2\r\n".encode() not in serverData):
                 print("Locking vehicle >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 vehicleStatus = 0
@@ -62,8 +55,16 @@ def Metrics():
                 print(err)
         
         if(counter > 12):
-            distance  = GetStoredDistance()
-            #Send distance data
+            with lock:
+                try:
+                    print("Sending distance data")
+                    distance  = GetStoredDistance()
+                    if(distance < 1):
+                        distance = 0
+                    PostDistance(distance)
+                except SIMNetworkError as err:
+                    print(err)
+
             counter = 0
             ResetDistanceBuffer()
 

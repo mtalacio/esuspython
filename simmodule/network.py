@@ -24,8 +24,9 @@ AT_CMD_SAPBR_APN = "AT+SAPBR=3,1,\"APN\",\"internet\"\n"
 AT_CMD_CMEE = "AT+CMEE=2\n"
 AT_CMD_CREG = "AT+CREG?\n"
 
-URL_GET = "http://us-central1-esus-d4f3d.cloudfunctions.net/getStatus?id=321&company=oDUmqHdibXU8bETkm6KY5PK2aiQ2"
-URL_POST = "http://us-central1-esus-d4f3d.cloudfunctions.net/pushVehicleLocation"
+URL_GET_STATUS = "http://us-central1-esus-d4f3d.cloudfunctions.net/getStatus?id=321&company=oDUmqHdibXU8bETkm6KY5PK2aiQ2"
+URL_POST_LOC = "http://us-central1-esus-d4f3d.cloudfunctions.net/pushVehicleLocation"
+URL_POST_DIST = "http://us-central1-esus-d4f3d.cloudfunctions.net/pushDistance"
 COMPANY_ID = "oDUmqHdibXU8bETkm6KY5PK2aiQ2"
 VEHICLE_ID = "321"
 
@@ -166,7 +167,7 @@ def GetVehicleStatus():
         time.sleep(1)
 
         SendCommand(AT_CMD_HTTPPARA_CID, AT_RSP_OK)
-        SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_GET, AT_RSP_OK, True)
+        SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_GET_STATUS, AT_RSP_OK, True)
         SendCommandPayload(AT_CMD_HTTPDATA, "0,5000", AT_RSP_OK, False)
         SendCommand(AT_CMD_HTTPACTION0, AT_RSP_HTTPACTION)
 
@@ -203,7 +204,45 @@ def PostGPSData(latitude, longitude):
         time.sleep(1)
 
         SendCommand(AT_CMD_HTTPPARA_CID, AT_RSP_OK)
-        SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_POST, AT_RSP_OK, True)
+        SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_POST_LOC, AT_RSP_OK, True)
+        SendCommand(AT_CMD_HTTPPARA_CONTENT, AT_RSP_OK)
+        SendCommandPayload(AT_CMD_HTTPDATA, str(payloadSize) + ",5000", "DOWNLOAD", False)
+        SendCommand(payload, AT_RSP_OK)
+        SendCommand(AT_CMD_HTTPACTION1, AT_RSP_HTTPACTION)
+        payload = HTTPRead()
+        
+        SendCommand(AT_CMD_HTTPTERM, AT_RSP_OK)
+        httpInitialized = False
+        time.sleep(1)
+
+        SendCommand(AT_CMD_SAPBR0, AT_RSP_OK)
+        gprsInitialized = False
+        time.sleep(1)
+    except InvalidResponseException as err:
+        print(err.message)
+        TerminateGprs()
+        raise SIMNetworkError("Post Failed")
+
+def PostDistance(distance):
+    global httpInitialized, gprsInitialized
+    print("Starting HTTP POST...")
+    
+    distance = round(distance, 3)
+
+    try:
+        payload = "{\"idv\":\""+ VEHICLE_ID + "\",\"idc\":\"" + COMPANY_ID + "\",\"dist\":\"" + str(distance) + "\"}\n"
+        payloadSize = len(payload)
+
+        SendCommand(AT_CMD_SAPBR1, AT_RSP_OK)
+        gprsInitialized = True
+        time.sleep(1)
+        
+        SendCommand(AT_CMD_HTTPINIT, AT_RSP_OK)
+        httpInitialized = True
+        time.sleep(1)
+
+        SendCommand(AT_CMD_HTTPPARA_CID, AT_RSP_OK)
+        SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_POST_DIST, AT_RSP_OK, True)
         SendCommand(AT_CMD_HTTPPARA_CONTENT, AT_RSP_OK)
         SendCommandPayload(AT_CMD_HTTPDATA, str(payloadSize) + ",5000", "DOWNLOAD", False)
         SendCommand(payload, AT_RSP_OK)
