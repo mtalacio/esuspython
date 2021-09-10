@@ -1,9 +1,14 @@
 from math import asin, cos, radians, sin, sqrt
+import time
 
 lastLatitude = -1
 lastLongitude = -1
 
+lastSpeed = 0
+
 distanceBuffer = 0
+
+lastTime = -1
 
 def CalculateDistance(lat, lng):
     global lastLatitude, lastLongitude
@@ -24,13 +29,31 @@ def CalculateDistance(lat, lng):
     distance = c * 6371000
     lastLatitude = lat
     lastLongitude = lng
-    print("Storing distance " + str(distance) + "m")
+    print("Storing distance " + str(distance) + "km")
     return distance
-    
 
 def StoreDistance(lat, lng):
-    global distanceBuffer
-    distanceBuffer = distanceBuffer + CalculateDistance(lat, lng)
+    global distanceBuffer, lastSpeed, lastTime
+    thisDistance = CalculateDistance(lat, lng)
+
+    if thisDistance > 10 or thisDistance < 1:
+        return
+
+    distanceBuffer = distanceBuffer + thisDistance
+
+    if lastTime == -1:
+        lastTime = time.time()
+        return
+
+    elapsed = time.time() - lastTime
+    
+    lastSpeed = thisDistance / (elapsed / 60 / 60)
+    
+    lastTime = time.time()
+
+    
+def GetStoredSpeed():
+    return lastSpeed
 
 def GetStoredDistance():
     return distanceBuffer
