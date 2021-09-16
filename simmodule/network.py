@@ -134,8 +134,20 @@ def InitializeModule():
     SendCommand(AT_CMD_SAPBR_GPRS, AT_RSP_OK)
     SendCommand(AT_CMD_SAPBR_APN, AT_RSP_OK)
     SendCommand(AT_CMD_CMEE, AT_RSP_OK)
-    SendCommand(AT_CMD_CREG, AT_RSP_REG)
-    print("Module ready!")
+    
+    tries = 0
+
+    while(tries <= 5):
+        try:
+            SendCommand(AT_CMD_CREG, AT_RSP_REG)
+            print("Module ready!")
+            return True
+        except InvalidResponseException:
+            tries = tries + 1
+            time.sleep(2)
+
+    print("Could not connect to network")
+    return False
 
 def TerminateGprs():
     global httpInitialized, gprsInitialized
@@ -223,14 +235,14 @@ def PostGPSData(latitude, longitude):
         TerminateGprs()
         raise SIMNetworkError("Post Failed")
 
-def PostDistance(distance):
+def PostDistance(distance, elapsed):
     global httpInitialized, gprsInitialized
     print("Starting HTTP POST...")
     
     distance = round(distance, 3)
 
     try:
-        payload = "{\"idv\":\""+ VEHICLE_ID + "\",\"idc\":\"" + COMPANY_ID + "\",\"dist\":\"" + str(distance) + "\"}\n"
+        payload = "{\"idv\":\""+ VEHICLE_ID + "\",\"idc\":\"" + COMPANY_ID + "\",\"dist\":\"" + str(distance) + "\",\"time:\"" + str(elapsed) + "\"}\n"
         payloadSize = len(payload)
 
         SendCommand(AT_CMD_SAPBR1, AT_RSP_OK)

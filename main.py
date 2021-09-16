@@ -1,4 +1,5 @@
-from metrics import GetStoredDistance, GetStoredSpeed, ResetDistanceBuffer, StoreDistance
+from types import resolve_bases
+from metrics import GetElapsedTime, GetPermanentDistance, GetStoredDistance, GetStoredSpeed, ResetAll, ResetDistanceBuffer, StoreDistance
 from simmodule.networkExceptions import GPSNotFixedException, SIMNetworkError
 import time
 from simmodule.network import GetVehicleStatus, InitializeModule, PostDistance, PostGPSData
@@ -102,11 +103,24 @@ speed.grid(column=0, row=3)
 
 raiseFrame(loader)
 
+flag = False
+
+def Reset():
+    global flag
+    flag = True
+    syncButton['state'] = "enabled"
+    raiseFrame(content)
+
 def GetVehicleData():
     global vehicleStatus 
     while(True):
+        if(flag):
+            break
+
         if(vehicleStatus == 0):
             with lock:
+                if(flag):
+                    break
                 try:
                     serverData = GetVehicleStatus()
                 except SIMNetworkError as err:
@@ -114,7 +128,8 @@ def GetVehicleData():
             if("2\r\n".encode() in serverData or "1\r\n".encode() in serverData):
                 print("Releasing lock... <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
                 vehicleStatus = 1
-            
+            elif("0\r\n".encode() in serverData):
+                Reset()
             time.sleep(2)
         elif(vehicleStatus == 1):
             with lock:
@@ -125,13 +140,20 @@ def GetVehicleData():
             if("2\r\n".encode() not in serverData):
                 print("Locking vehicle >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 vehicleStatus = 0
+                if("0\r\n".encode() in serverData):
+                    Reset()
 
             time.sleep(20)
 
 def PushGPSData():
     while(True):
+        if(flag):
+            break
+
         time.sleep(1)
         with lock:
+            if(flag):
+                break
             try:
                 lat, lng = GetCoordinates()
                 PostGPSData(lat, lng)
@@ -142,15 +164,19 @@ def PushGPSData():
 
 def Metrics():
     counter = 0
+    time.sleep(2)
     while(True):
-        time.sleep(2)
+        if(flag):
+            break
 
         with lock:
+            if(flag):
+                break
             try:
                 print("Fetching coordinates to distance")
                 lat, lng = GetCoordinates()
                 StoreDistance(float(lat), float(lng))
-                kmLabel['text'] = str(round(GetStoredDistance(),2)) + " km"
+                kmLabel['text'] = str(round(GetPermanentDistance(), 2)) + " km"
                 speed['text'] = str(round(GetStoredSpeed(), 2)) + " km/h"
             except GPSNotFixedException as err:
                 print(err)
@@ -159,10 +185,13 @@ def Metrics():
             with lock:
                 try:
                     print("Sending distance data")
-                    distance  = GetStoredDistance()
-                    if(distance < 1):
+                    distance = GetStoredDistance()
+                    elapsed = GetElapsedTime()
+
+                    if(distance > 0.7 or distance < 0.01):
                         distance = 0
-                    PostDistance(distance)
+                    
+                    PostDistance(distance, elapsed)
                 except SIMNetworkError as err:
                     print(err)
 
@@ -173,11 +202,15 @@ def Metrics():
         time.sleep(5)
 
 def StartRunningThreads():
+    global flag
+    flag = False
+    ResetAll()
+
     lockThread = threading.Thread(target=GetVehicleData)
     lockThread.start()
 
     gpsThread = threading.Thread(target=PushGPSData)
-    #gpsThread.start()
+    gpsThread.start()
 
     metricsThread = threading.Thread(target=Metrics)
     metricsThread.start()
@@ -188,7 +221,11 @@ def ConfigThread():
     try:
         statusLabel['text'] = "Starting vehicle..."
         time.sleep(10)
-        InitializeModule()
+        started = InitializeModule()
+        if(not started):
+            statusLabel['text'] = "Could not connect to network!"
+            return
+
         statusLabel['text'] = "Starting GPS..."
         InitializeGPS()
         raiseFrame(content)
