@@ -32,7 +32,7 @@ def GetCoordinates():
     response = response.decode('utf-8').split(" ")
     dataSplit = response[1].split(",")
 
-    if(dataSplit[1] == '0'):
+    if(dataSplit[1] == '0' or dataSplit[0] == '0'):
         raise GPSNotFixedException("GPS does not have a fixed position!")
 
     latitude = dataSplit[3]
