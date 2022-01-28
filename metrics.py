@@ -70,10 +70,13 @@ def StoreDistance(lat, lng):
     lastTime = time.time()
 
 def GetSpeedAndBattery():
+    print("Getting from socket")
     sock.sendall(b"R")
     response = sock.recv(1024)
     response = response.decode('utf-8')
+    print("Response >> " + response)
     response = response.split(',')
+
     return response[0], response[1]
 
 def GetStoredDistance():
