@@ -59,7 +59,7 @@ code_bmp.config(background="white")
 
 content = ttk.Frame(root)
 content.grid(column=0, row=0, sticky='news')
-logo = PhotoImage(file="/home/pi/Desktop/ESUS/esus.png")
+logo = PhotoImage(file="/home/pi/Desktop/esuspython/esus.png")
 logoLabel = ttk.Label(content)
 logoLabel['image'] = code_bmp
 
