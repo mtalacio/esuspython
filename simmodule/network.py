@@ -2,6 +2,7 @@ from simmodule.networkExceptions import InvalidResponseException, SIMNetworkErro
 import serial
 import time
 import RPi.GPIO as GPIO
+import serial.tools.list_ports
 
 AT_CMD_SAPBR1 = "AT+SAPBR=1,1\n"
 AT_CMD_HTTPINIT = "AT+HTTPINIT\n"
@@ -30,7 +31,12 @@ URL_POST_DIST = "http://us-central1-esus-d4f3d.cloudfunctions.net/pushDistance"
 COMPANY_ID = "oDUmqHdibXU8bETkm6KY5PK2aiQ2"
 VEHICLE_ID = "321"
 
-ser = serial.Serial("/dev/ttyUSB0", 115200, timeout=5)
+ports = serial.tools.list_ports.comports()
+for p in ports:
+    if p.vid == 4292:
+        serialPort = p.device
+
+ser = serial.Serial(serialPort, 115200, timeout=5)
 
 gprsInitialized = False
 httpInitialized = False
@@ -242,7 +248,7 @@ def PostDistance(distance, elapsed):
     distance = round(distance, 3)
 
     try:
-        payload = "{\"idv\":\""+ VEHICLE_ID + "\",\"idc\":\"" + COMPANY_ID + "\",\"dist\":\"" + str(distance) + "\",\"time:\"" + str(elapsed) + "\"}\n"
+        payload = "{\"idv\":\""+ VEHICLE_ID + "\",\"idc\":\"" + COMPANY_ID + "\",\"dist\":\"" + str(distance) + "\",\"time\":\"" + str(elapsed) + "\"}\n"
         payloadSize = len(payload)
 
         SendCommand(AT_CMD_SAPBR1, AT_RSP_OK)

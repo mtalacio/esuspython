@@ -1,5 +1,5 @@
 from types import resolve_bases
-from metrics import GetElapsedTime, GetPermanentDistance, GetStoredDistance, GetStoredSpeed, ResetAll, ResetDistanceBuffer, StoreDistance
+from metrics import GetElapsedTime, GetPermanentDistance, GetSpeedAndBattery, GetStoredDistance, ResetAll, ResetDistanceBuffer, StartMetricsClient, StoreDistance
 from simmodule.networkExceptions import GPSNotFixedException, SIMNetworkError
 import time
 from simmodule.network import GetVehicleStatus, InitializeModule, PostDistance, PostGPSData
@@ -15,6 +15,7 @@ vehicleStatus = 0
 
 def AwaitForSync():
     global vehicleStatus
+    serverData = b""
     while(True):
         with lock:
             try:
@@ -29,7 +30,6 @@ def AwaitForSync():
         time.sleep(1)
 
 def StartSync():
-    syncButton['state'] = "disabled"
     syncThread = threading.Thread(target=AwaitForSync)
     syncThread.start()
 
@@ -59,13 +59,11 @@ code_bmp.config(background="white")
 
 content = ttk.Frame(root)
 content.grid(column=0, row=0, sticky='news')
-syncButton = ttk.Button(content, text="Sync", width=30, command=StartSync)
-logo = PhotoImage(file="/home/pi/Desktop/esuspython/esus.png")
+logo = PhotoImage(file="/home/pi/Desktop/ESUS/esus.png")
 logoLabel = ttk.Label(content)
 logoLabel['image'] = code_bmp
 
 logoLabel.grid(column=0, row=0, pady=30)
-syncButton.grid(column=0, row=1, pady=10, sticky=(N, S))
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
 
@@ -108,7 +106,6 @@ flag = False
 def Reset():
     global flag
     flag = True
-    syncButton['state'] = "enabled"
     raiseFrame(content)
 
 def GetVehicleData():
@@ -164,6 +161,7 @@ def PushGPSData():
 
 def Metrics():
     counter = 0
+    StartMetricsClient()
     time.sleep(2)
     while(True):
         if(flag):
@@ -177,11 +175,16 @@ def Metrics():
                 lat, lng = GetCoordinates()
                 StoreDistance(float(lat), float(lng))
                 kmLabel['text'] = str(round(GetPermanentDistance(), 2)) + " km"
-                speed['text'] = str(round(GetStoredSpeed(), 2)) + " km/h"
+                speedData, batteryData = GetSpeedAndBattery()
+                speed['text'] = speedData + " km/h"
+                batteryData = float(batteryData)
+                batteryData = batteryData / 10
+                battery['value'] = batteryData
+                levelLabel['text'] = str(batteryData) + "%"
             except GPSNotFixedException as err:
                 print(err)
         
-        if(counter > 12):
+        if(counter > 60):
             with lock:
                 try:
                     print("Sending distance data")
@@ -199,7 +202,7 @@ def Metrics():
             ResetDistanceBuffer()
 
         counter = counter + 1
-        time.sleep(5)
+        time.sleep(1)
 
 def StartRunningThreads():
     global flag
@@ -229,6 +232,8 @@ def ConfigThread():
         statusLabel['text'] = "Starting GPS..."
         InitializeGPS()
         raiseFrame(content)
+        syncThread = threading.Thread(target=AwaitForSync)
+        syncThread.start()
     except Exception as err:
         print(err)
         statusLabel['text'] = err.message
@@ -240,7 +245,6 @@ def main():
     print("Start")
     root.mainloop()
     print("Threads started")
-
 
 if __name__ == "__main__":
     main()

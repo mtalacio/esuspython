@@ -1,5 +1,6 @@
 from math import asin, cos, radians, sin, sqrt
 import time
+import socket
 
 lastLatitude = -1
 lastLongitude = -1
@@ -13,6 +14,19 @@ distanceStorage = 0
 lastTime = -1
 
 elapsedTime = 0
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+HOST = "127.0.0.1"
+PORT = 50000
+
+def StartMetricsClient():
+    while True:
+        try:
+            sock.connect((HOST, PORT))
+            print("Metrics server initialized")
+            break
+        except TimeoutError:
+            print("Server not started, waiting 2 seconds")
 
 def CalculateDistance(lat, lng):
     global lastLatitude, lastLongitude
@@ -55,8 +69,12 @@ def StoreDistance(lat, lng):
     
     lastTime = time.time()
 
-def GetStoredSpeed():
-    return lastSpeed
+def GetSpeedAndBattery():
+    sock.sendall(b"R")
+    response = sock.recv(1024)
+    response = response.decode('utf-8')
+    response = response.split(',')
+    return response[0], response[1]
 
 def GetStoredDistance():
     return distanceBuffer
