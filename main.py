@@ -8,6 +8,7 @@ import threading
 from tkinter import *
 from tkinter import ttk
 import pyqrcode
+import RPi.GPIO as GPIO
 
 lock = threading.Lock()
 
@@ -101,7 +102,13 @@ speed.grid(column=0, row=3)
 
 raiseFrame(loader)
 
+connected = False
+
 flag = False
+
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(8, GPIO.OUT)
+GPIO.output(8, GPIO.LOW)
 
 def Reset():
     global flag
@@ -125,6 +132,7 @@ def GetVehicleData():
             if("2\r\n".encode() in serverData or "1\r\n".encode() in serverData):
                 print("Releasing lock... <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
                 vehicleStatus = 1
+                GPIO.output(8, GPIO.LOW)
             elif("0\r\n".encode() in serverData):
                 Reset()
             time.sleep(2)
@@ -136,6 +144,8 @@ def GetVehicleData():
                     print(err)
             if("2\r\n".encode() not in serverData):
                 print("Locking vehicle >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                GPIO.output(8, GPIO.HIGH)
+
                 vehicleStatus = 0
                 if("0\r\n".encode() in serverData):
                     Reset()
@@ -153,7 +163,8 @@ def PushGPSData():
                 break
             try:
                 lat, lng = GetCoordinates()
-                PostGPSData(lat, lng)
+                if(connected):
+                    PostGPSData(lat, lng)
             except GPSNotFixedException as err:
                 print(err)
         
@@ -194,7 +205,8 @@ def Metrics():
                     if(distance > 0.7 or distance < 0.01):
                         distance = 0
                     
-                    PostDistance(distance, elapsed)
+                    if(connected):
+                        PostDistance(distance, elapsed)
                 except SIMNetworkError as err:
                     print(err)
 
@@ -209,8 +221,9 @@ def StartRunningThreads():
     flag = False
     ResetAll()
 
-    lockThread = threading.Thread(target=GetVehicleData)
-    lockThread.start()
+    if(connected):
+        lockThread = threading.Thread(target=GetVehicleData)
+        lockThread.start()
 
     gpsThread = threading.Thread(target=PushGPSData)
     gpsThread.start()
@@ -221,16 +234,21 @@ def StartRunningThreads():
     raiseFrame(running)
 
 def ConfigThread():
+    global connected
     try:
         statusLabel['text'] = "Starting vehicle..."
         time.sleep(10)
-        started = InitializeModule()
-        if(not started):
+        connected = InitializeModule()
+        if(not connected):
             statusLabel['text'] = "Could not connect to network!"
-            return
 
         statusLabel['text'] = "Starting GPS..."
         InitializeGPS()
+
+        if(not connected):
+            StartRunningThreads()
+            return
+        
         raiseFrame(content)
         syncThread = threading.Thread(target=AwaitForSync)
         syncThread.start()
