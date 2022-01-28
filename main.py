@@ -186,15 +186,15 @@ def Metrics():
                 lat, lng = GetCoordinates()
                 StoreDistance(float(lat), float(lng))
                 kmLabel['text'] = str(round(GetPermanentDistance(), 2)) + " km"
-                speedData, batteryData = GetSpeedAndBattery()
-                speed['text'] = speedData + " km/h"
-                batteryData = float(batteryData)
-                batteryData = batteryData / 10
-                battery['value'] = batteryData
-                levelLabel['text'] = str(batteryData) + "%"
             except GPSNotFixedException as err:
                 print(err)
-        
+
+            speedData, batteryData = GetSpeedAndBattery()
+            speed['text'] = speedData + " km/h"
+            batteryData = float(batteryData)
+            batteryData = batteryData / 10
+            battery['value'] = batteryData
+            levelLabel['text'] = str(batteryData) + "%"
         if(counter > 60):
             with lock:
                 try:
