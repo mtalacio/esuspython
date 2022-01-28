@@ -143,7 +143,7 @@ def InitializeModule():
     
     tries = 0
 
-    while(tries <= 5):
+    while(tries <= 3):
         try:
             SendCommand(AT_CMD_CREG, AT_RSP_REG)
             print("Module ready!")
