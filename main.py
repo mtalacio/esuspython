@@ -195,7 +195,7 @@ def Metrics():
             batteryData = batteryData / 10
             battery['value'] = batteryData
             levelLabel['text'] = str(batteryData) + "%"
-        if(counter > 60):
+        if(counter > 30):
             with lock:
                 try:
                     print("Sending distance data")

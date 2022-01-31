@@ -53,21 +53,23 @@ def CalculateDistance(lat, lng):
 def StoreDistance(lat, lng):
     global distanceBuffer, lastSpeed, lastTime, distanceStorage, elapsedTime
     thisDistance = CalculateDistance(lat, lng)
-
-    if thisDistance > 10 or thisDistance < 1:
-        return
-
-    distanceBuffer = distanceBuffer + thisDistance
-    distanceStorage = distanceStorage + distanceBuffer
+    
     if lastTime == -1:
         lastTime = time.time()
         return
 
     elapsed = time.time() - lastTime
     elapsedTime = elapsedTime + elapsed
+    print("Elapsed Time: " + str(elapsedTime) + " elasped: " + str(elapsed))
     lastSpeed = thisDistance / (elapsed / 60 / 60)
     
     lastTime = time.time()
+    
+    if thisDistance > 10 or thisDistance < 1:
+        return
+
+    distanceBuffer = distanceBuffer + thisDistance
+    distanceStorage = distanceStorage + distanceBuffer
 
 def GetSpeedAndBattery():
     print("Getting from socket")
