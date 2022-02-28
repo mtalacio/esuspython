@@ -1,7 +1,6 @@
 from math import asin, cos, radians, sin, sqrt
 import time
 import socket
-import select
 
 lastLatitude = -1
 lastLongitude = -1
@@ -19,8 +18,6 @@ elapsedTime = 0
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 HOST = "127.0.0.1"
 PORT = 50000
-
-sock.setblocking(0)
 
 def StartMetricsClient():
     while True:
@@ -75,24 +72,9 @@ def StoreDistance(lat, lng):
     distanceStorage = distanceStorage + distanceBuffer
 
 def GetSpeedAndBattery():
-    response = ""
-
     print("Getting from socket")
     sock.sendall(b"R")
-    ready = select.select([sock], [], [], 2)
-    
-    if(ready[0]):
-        response = sock.recv(1024)
-    else:
-        print("Connection to socket lost")
-        sock.close()
-        try:
-            sock.connect((HOST, PORT))
-            print("Metrics server initialized")
-            return "0", "0"
-        except TimeoutError:
-            print("Server not started, waiting 2 seconds")
-
+    response = sock.recv(1024)
     response = response.decode('utf-8')
     print("Response >> " + response)
     response = response.split(',')
