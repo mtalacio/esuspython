@@ -86,9 +86,13 @@ def GetSpeedAndBattery():
     else:
         print("Connection to socket lost")
         sock.close()
-        sock.connect((HOST, PORT))
-        return "0", "0"
-        
+        try:
+            sock.connect((HOST, PORT))
+            print("Metrics server initialized")
+            return "0", "0"
+        except TimeoutError:
+            print("Server not started, waiting 2 seconds")
+
     response = response.decode('utf-8')
     print("Response >> " + response)
     response = response.split(',')
