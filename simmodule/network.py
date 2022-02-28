@@ -67,13 +67,11 @@ def SendCommand(command, expected):
     data = ReadSerial()
     internalTries = 0
     while(expected.encode() not in data):
-        if("+CME ERROR".encode() in data):
-            print("Error, trying again...")
-            data = ReadSerial()
-            internalTries = internalTries + 1
         if(internalTries > 2):
             raise InvalidResponseException("Error in sending message > " + command)
-        
+        data = ReadSerial()
+        internalTries = internalTries + 1
+    
     return data
 
 
