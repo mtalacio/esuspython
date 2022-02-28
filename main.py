@@ -201,7 +201,7 @@ def Metrics():
                 print(err)
 
             speedData, batteryData = GetSpeedAndBattery()
-            speed['text'] = str(round(speedData, 2)) + " km/h"
+            speed['text'] = str(round(float(speedData), 2)) + " km/h"
             batteryData = float(batteryData)
             batteryData = batteryData / 10
             battery['value'] = batteryData
