@@ -195,6 +195,10 @@ def Metrics():
                 kmLabel['text'] = str(round(GetPermanentDistance(), 2)) + " km"
             except GPSNotFixedException as err:
                 print(err)
+            except SIMNetworkError as err:
+                print(err)
+            except InvalidResponseException as err:
+                print(err)
 
             speedData, batteryData = GetSpeedAndBattery()
             speed['text'] = str(round(speedData, 2)) + " km/h"

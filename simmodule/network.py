@@ -188,12 +188,6 @@ def TerminateGprs():
         ser.reset_input_buffer()
         httpInitialized = False
         print("HTTP terminated")
-    
-    if(gprsInitialized):
-        ser.write(AT_CMD_SAPBR0.encode())
-        ser.reset_input_buffer()
-        gprsInitialized = False
-        print("GPRS Connection terminated")
 
 def GetVehicleStatus():
     global httpInitialized, gprsInitialized
