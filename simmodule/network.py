@@ -74,6 +74,21 @@ def SendCommand(command, expected):
     
     return data
 
+def SendHttpAction(command, expected):
+    print("Sending action " + command)
+    ser.write(command.encode())
+    ser.flush()
+    time.sleep(3)
+    data = ReadSerial()
+    internalTries = 0
+    while(expected.encode() not in data):
+        if(internalTries > 3):
+            raise InvalidResponseException("Error in sending message > " + command)
+        time.sleep(1)
+        data = ReadSerial()
+        internalTries = internalTries + 1
+    
+    return data
 
 def SendCommandPayload(command, payload, expected, quotes):
     print("Sending " + command + payload)
@@ -148,6 +163,9 @@ def InitializeModule():
     while(tries <= 3):
         try:
             SendCommand(AT_CMD_CREG, AT_RSP_REG)
+            SendCommand(AT_CMD_SAPBR0, AT_RSP_OK)
+            time.sleep(5)
+            gprsInitialized = False
             SendCommand(AT_CMD_SAPBR1, AT_RSP_OK)
             time.sleep(5)
             gprsInitialized = True
@@ -189,7 +207,7 @@ def GetVehicleStatus():
         SendCommand(AT_CMD_HTTPPARA_CID, AT_RSP_OK)
         SendCommandPayload(AT_CMD_HTTPPARA_URL, URL_GET_STATUS, AT_RSP_OK, True)
         SendCommandPayload(AT_CMD_HTTPDATA, "0,5000", AT_RSP_OK, False)
-        SendCommand(AT_CMD_HTTPACTION0, AT_RSP_HTTPACTION)
+        SendHttpAction(AT_CMD_HTTPACTION0, AT_RSP_HTTPACTION)
 
         payload = HTTPRead()
 
@@ -220,7 +238,7 @@ def PostGPSData(latitude, longitude):
         SendCommand(AT_CMD_HTTPPARA_CONTENT, AT_RSP_OK)
         SendCommandPayload(AT_CMD_HTTPDATA, str(payloadSize) + ",5000", "DOWNLOAD", False)
         SendCommand(payload, AT_RSP_OK)
-        SendCommand(AT_CMD_HTTPACTION1, AT_RSP_HTTPACTION)
+        SendHttpAction(AT_CMD_HTTPACTION1, AT_RSP_HTTPACTION)
         payload = HTTPRead()
         
         SendCommand(AT_CMD_HTTPTERM, AT_RSP_OK)
@@ -251,7 +269,7 @@ def PostDistance(distance, elapsed):
         SendCommand(AT_CMD_HTTPPARA_CONTENT, AT_RSP_OK)
         SendCommandPayload(AT_CMD_HTTPDATA, str(payloadSize) + ",5000", "DOWNLOAD", False)
         SendCommand(payload, AT_RSP_OK)
-        SendCommand(AT_CMD_HTTPACTION1, AT_RSP_HTTPACTION)
+        SendHttpAction(AT_CMD_HTTPACTION1, AT_RSP_HTTPACTION)
         payload = HTTPRead()
         
         SendCommand(AT_CMD_HTTPTERM, AT_RSP_OK)

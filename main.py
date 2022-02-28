@@ -172,9 +172,9 @@ def PushGPSData():
             except GPSNotFixedException as err:
                 print(err)
             except InvalidResponseException as err:
-                    print(err)
+                print(err)
             except SIMNetworkError as err:
-                    print(err)
+                print(err)
         time.sleep(120)
 
 def Metrics():
