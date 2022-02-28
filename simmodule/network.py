@@ -82,6 +82,11 @@ def SendHttpAction(command, expected):
     data = ReadSerial()
     internalTries = 0
     while(expected.encode() not in data):
+        if(internalTries > 1):
+            print("Sending action " + command)
+            ser.write(command.encode())
+            ser.flush()
+            time.sleep(3)
         if(internalTries > 3):
             raise InvalidResponseException("Error in sending message > " + command)
         time.sleep(1)
@@ -185,6 +190,7 @@ def TerminateGprs():
 
     if(httpInitialized):
         ser.write(AT_CMD_HTTPTERM.encode())
+        time.sleep(1)
         ser.reset_input_buffer()
         httpInitialized = False
         print("HTTP terminated")
