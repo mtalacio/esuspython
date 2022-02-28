@@ -1,6 +1,6 @@
 from types import resolve_bases
 from metrics import GetElapsedTime, GetPermanentDistance, GetSpeedAndBattery, GetStoredDistance, ResetAll, ResetDistanceBuffer, StartMetricsClient, StoreDistance
-from simmodule.networkExceptions import GPSNotFixedException, SIMNetworkError
+from simmodule.networkExceptions import GPSNotFixedException, InvalidResponseException, SIMNetworkError
 import time
 from simmodule.network import GetVehicleStatus, InitializeModule, PostDistance, PostGPSData
 from simmodule.gps import GetCoordinates, InitializeGPS
@@ -129,6 +129,8 @@ def GetVehicleData():
                     serverData = GetVehicleStatus()
                 except SIMNetworkError as err:
                     print(err)
+                except InvalidResponseException as err:
+                    print(err)
             if("2\r\n".encode() in serverData or "1\r\n".encode() in serverData):
                 print("Releasing lock... <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
                 vehicleStatus = 1
@@ -141,6 +143,8 @@ def GetVehicleData():
                 try:
                     serverData = GetVehicleStatus()
                 except SIMNetworkError as err:
+                    print(err)
+                except InvalidResponseException as err:
                     print(err)
             if("2\r\n".encode() not in serverData):
                 print("Locking vehicle >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -167,7 +171,10 @@ def PushGPSData():
                     PostGPSData(lat, lng)
             except GPSNotFixedException as err:
                 print(err)
-        
+            except InvalidResponseException as err:
+                    print(err)
+            except SIMNetworkError as err:
+                    print(err)
         time.sleep(120)
 
 def Metrics():
@@ -209,7 +216,8 @@ def Metrics():
                         PostDistance(distance, elapsed)
                 except SIMNetworkError as err:
                     print(err)
-
+                except InvalidResponseException as err:
+                    print(err)
             counter = 0
             ResetDistanceBuffer()
 
